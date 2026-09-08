@@ -1,0 +1,22 @@
+# Java / Maven
+target/
+*.class
+*.jar
+!.mvn/wrapper/maven-wrapper.jar
+# Node
+node_modules/
+dist/
+.vite/
+# Bien moi truong - TUYET DOI khong commit
+.env
+.env.local
+.env.*.local
+# IDE
+.idea/
+*.iml
+.vscode/
+# He dieu hanh
+.DS_Store
+Thumbs.db
+# Log
+*.log
