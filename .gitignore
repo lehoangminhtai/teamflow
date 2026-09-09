@@ -20,3 +20,5 @@ dist/
 Thumbs.db
 # Log
 *.log
+/.metadata/
+/backend/.metadata/
