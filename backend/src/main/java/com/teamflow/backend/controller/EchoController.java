@@ -9,6 +9,8 @@ import com.teamflow.backend.dto.EchoRequest;
 import com.teamflow.backend.dto.EchoResponse;
 import com.teamflow.backend.service.EchoService;
 
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api")
 public class EchoController {
@@ -20,7 +22,7 @@ public class EchoController {
 	}
 	
 	@PostMapping("/echo")
-	public EchoResponse echo(@RequestBody EchoRequest request) {
+	public EchoResponse echo(@Valid @RequestBody EchoRequest request) {
 		return echoService.echo(request);
 	}
 }
