@@ -1,0 +1,7 @@
+app:
+ environment: production
+
+logging:
+ level:
+  com.teamflow.backend: INFO
+  org.springframework.web: WARN

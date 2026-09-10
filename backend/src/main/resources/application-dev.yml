@@ -1,0 +1,5 @@
+app:
+ environment: development
+logging:
+ level:
+  com.teamflow.backend: DEBUG
