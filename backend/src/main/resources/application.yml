@@ -12,3 +12,14 @@ app:
   name: TeamFlow API
   version: 0.1.0
   environment: development
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    operation-sorter: method
+  api-docs:
+    path: /v3/api-docs
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{requestId:-........}] %logger{25} - %msg%n"
+  
