@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.teamflow.backend.dto.auth.LoginRequest;
+import com.teamflow.backend.dto.auth.LoginResponse;
 import com.teamflow.backend.dto.auth.RegisterRequest;
 import com.teamflow.backend.dto.user.UserResponse;
 import com.teamflow.backend.security.JwtService;
@@ -36,9 +38,10 @@ public class AuthController {
 		return authService.register(request);
 	}
 	
-	@GetMapping("/demo-token")
-	public java.util.Map<String, String> demoToken(){
-		return java.util.Map.of("token", jwtService.generateAccessToken(1L, "tai@teamflow.dev","Le Tai"));
+	@Operation(summary = "Login and receive access token")
+	@PostMapping("/login")
+	public LoginResponse login(@Valid @RequestBody LoginRequest request) {
+		return authService.login(request);
 	}
 	
 }
