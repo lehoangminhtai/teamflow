@@ -7,9 +7,22 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
+import com.teamflow.backend.security.JwtAuthenticationFilter;
+import com.teamflow.backend.security.SecurityErrorWriter;
 
 @Configuration
 public class SecurityConfig {
+	
+	private final JwtAuthenticationFilter jwtFilter;
+	private final SecurityErrorWriter errorWriter;
+	
+	public SecurityConfig(JwtAuthenticationFilter jwtFilter, SecurityErrorWriter errorWriter) {
+		this.jwtFilter = jwtFilter;
+		this.errorWriter = errorWriter;
+	}
+
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
@@ -20,7 +33,15 @@ public class SecurityConfig {
 		http
 		.csrf(csrf -> csrf.disable())
 		.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-		.authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+		.authorizeHttpRequests(auth -> auth
+				.requestMatchers("/api/auth/**").permitAll()
+				.requestMatchers("/api/health", "/api/info").permitAll()
+				.requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
+				.anyRequest().authenticated())
+		.exceptionHandling(ex -> ex
+				.authenticationEntryPoint(errorWriter)
+				.accessDeniedHandler(errorWriter))
+		.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 		
 		return http.build();
 	}
