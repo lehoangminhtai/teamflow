@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.teamflow.backend.dto.auth.LoginRequest;
 import com.teamflow.backend.dto.auth.LoginResponse;
@@ -20,6 +21,7 @@ import com.teamflow.backend.security.JwtService;
 @Service
 public class AuthService {
 	private static final Logger log = LoggerFactory.getLogger(AuthService.class);
+	public record RefreshResponse(String accessToken, long expiresIn) {};
 	
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
@@ -75,4 +77,9 @@ public class AuthService {
 		return new UnauthorizedException("INVALID_CREDENTIALS", "Email or password not correct");
 	}
 	
+	@Transactional(readOnly = true)
+	public User requireUserByEmail(String email) {
+		return userRepository.findByEmailIgnoreCase(email.trim().toLowerCase())
+				.orElseThrow(this::invalidCredentials);
+	}
 }

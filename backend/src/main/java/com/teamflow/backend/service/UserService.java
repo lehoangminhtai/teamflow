@@ -16,6 +16,7 @@ import com.teamflow.backend.exception.UnauthorizedException;
 import com.teamflow.backend.exception.ValidationException;
 import com.teamflow.backend.mapper.UserMapper;
 import com.teamflow.backend.repository.UserRepository;
+import com.teamflow.backend.security.RefreshTokenService;
 
 @Service
 public class UserService {
@@ -24,10 +25,14 @@ public class UserService {
 	private final UserRepository userRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final UserMapper userMapper;
-	public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper) {
+	private final RefreshTokenService refreshTokenService;
+	
+	public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper,
+			RefreshTokenService refreshTokenService) {
 		this.userRepository = userRepository;
 		this.passwordEncoder = passwordEncoder;
 		this.userMapper = userMapper;
+		this.refreshTokenService = refreshTokenService;
 	}
 	
 	@Transactional(readOnly = true)
@@ -66,8 +71,9 @@ public class UserService {
 			throw new ValidationException("New password must be different");
 		}
 		user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
-		
 		userRepository.save(user);
+		
+		refreshTokenService.revokeAllForUser(userId);
 		
 		log.info("Password changed: userId = {}", userId);
 	}
