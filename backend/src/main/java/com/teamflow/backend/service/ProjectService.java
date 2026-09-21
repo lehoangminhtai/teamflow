@@ -36,6 +36,7 @@ public class ProjectService {
 		this.projectMapper = projectMapper;
 	}
 	
+	@Transactional
 	public ProjectResponse create(Long currentUserId, CreateProjectRequest request) {
 		User owner = userRepository.findById(currentUserId)
 				.orElseThrow(() -> new NotFoundException("Not found user"));
