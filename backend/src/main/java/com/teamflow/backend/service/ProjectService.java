@@ -1,12 +1,19 @@
 package com.teamflow.backend.service;
 
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.teamflow.backend.dto.common.PageResponse;
+import com.teamflow.backend.dto.common.SortParser;
 import com.teamflow.backend.dto.project.CreateProjectRequest;
 import com.teamflow.backend.dto.project.ProjectResponse;
 import com.teamflow.backend.dto.project.ProjectSummary;
@@ -31,6 +38,7 @@ public class ProjectService {
 	private final UserRepository userRepository;
 	private final ProjectMapper projectMapper;
 	private final ProjectAccessService accessService;
+	private static final Set<String> SORTABLE = Set.of("createdAt", "updatedAt", "name");
 
 	public ProjectService(ProjectRepository projectRepository, ProjectMemberRepository memberRepository,
 			UserRepository userRepository, ProjectMapper projectMapper, ProjectAccessService accessSerivce) {
@@ -57,14 +65,27 @@ public class ProjectService {
 	}
 	
 	@Transactional(readOnly = true)
-	public List<ProjectSummary> listMine(Long currentUserId, boolean archived){
-		List<ProjectMember> memberships = 
-				memberRepository.findMembershipsWithProject(currentUserId, archived);
+	public PageResponse<ProjectSummary> listMine(Long currentUserId, boolean archived,
+			String q, int page, int size, String sort
+			){
+		int safeSize = Math.min(Math.max(size, 1), 100);
 		
-		return memberships.stream()
-				.map(m -> projectMapper.toSummary(
-						m.getProject(), m.getRole(), memberRepository.countByProjectId(m.getProject().getId())))
-				.toList();
+		Sort resolvedsort = SortParser.parse(sort, SORTABLE,
+				Sort.by(Sort.Direction.DESC,"createdAt"));
+		
+		Pageable pageable = PageRequest.of(Math.max(page, 0),
+				safeSize, 
+				Sort.by(resolvedsort.iterator().next().getDirection(),
+						"project." + resolvedsort.iterator().next().getProperty()));
+		Page<ProjectMember> result = memberRepository.searchMemberships(currentUserId,
+				archived, (q== null || q.isBlank()) ? null : q.trim(), 
+				pageable);
+		
+		return PageResponse.of(result, m -> projectMapper.toSummary(
+				m.getProject(),
+				m.getRole(), 
+				memberRepository.countByProjectId(m.getProject().getId())));
+		
 	}
 	
 	@Transactional(readOnly = true)

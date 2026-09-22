@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.teamflow.backend.dto.common.PageResponse;
 import com.teamflow.backend.dto.project.CreateProjectRequest;
 import com.teamflow.backend.dto.project.ProjectResponse;
 import com.teamflow.backend.dto.project.ProjectSummary;
@@ -47,9 +48,15 @@ public class ProjectController {
 	
 	@Operation(summary = "List of projects I have participated in")
 	@GetMapping
-	public List<ProjectSummary> listMine(@AuthenticationPrincipal AuthUser authUser,
-			@RequestParam(defaultValue = "false") boolean archived){
-		return projectService.listMine(authUser.id(), archived);
+	public PageResponse<ProjectSummary> listMine(
+			@AuthenticationPrincipal AuthUser authUser,
+			@RequestParam(defaultValue = "false") boolean archived,
+			@RequestParam(required = false) String q,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size,
+			@RequestParam(required = false) String sort
+			){
+		return projectService.listMine(authUser.id(), archived, q, page, size, sort);
 	}
 	
 	@Operation(summary = "Project detail")
