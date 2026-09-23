@@ -16,11 +16,16 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.teamflow.backend.dto.common.PageResponse;
+import com.teamflow.backend.dto.member.InvitationResponse;
+import com.teamflow.backend.dto.member.InviteMemberRequest;
+import com.teamflow.backend.dto.member.MemberResponse;
 import com.teamflow.backend.dto.project.CreateProjectRequest;
 import com.teamflow.backend.dto.project.ProjectResponse;
 import com.teamflow.backend.dto.project.ProjectSummary;
 import com.teamflow.backend.dto.project.UpdateProjectRequest;
+import com.teamflow.backend.entity.ProjectInvitation;
 import com.teamflow.backend.security.AuthUser;
+import com.teamflow.backend.service.MemberService;
 import com.teamflow.backend.service.ProjectService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,11 +38,15 @@ import jakarta.validation.Valid;
 public class ProjectController {
 	
 	private final ProjectService projectService;
+	private final MemberService memberService;
 
-	public ProjectController(ProjectService projectService) {
-		this.projectService = projectService;
-	}
 	
+	
+	public ProjectController(ProjectService projectService, MemberService memberService) {
+		this.projectService = projectService;
+		this.memberService = memberService;
+	}
+
 	@Operation(summary = "Create new project")
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
@@ -91,5 +100,30 @@ public class ProjectController {
 	@PostMapping("/{id}/unarchive")
 	public ProjectResponse unarchive(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long id) {
 		return projectService.setArchived(authUser.id(), id, false);
+	}
+	
+	@PostMapping("/{id}/members")
+	@ResponseStatus(HttpStatus.CREATED)
+	@Operation(summary = "Invite to join project")
+	public InvitationResponse invite(
+			@AuthenticationPrincipal AuthUser authUser,
+			@PathVariable Long id,
+			@Valid @RequestBody InviteMemberRequest request
+			) {
+		return memberService.invite(authUser.id(), id, request);
+	}
+	
+	@GetMapping("/{id}/members")
+	@Operation(summary = "List member in project")
+	public List<MemberResponse> listMembers(@AuthenticationPrincipal AuthUser authUser,
+			@PathVariable Long id){
+		return memberService.list(authUser.id(), id);
+	}
+	
+	@GetMapping("/{id}/invitations")
+	@Operation(summary = "Get list invitation pending of me")
+	public List<InvitationResponse> listPending(@AuthenticationPrincipal AuthUser authUser,
+			@PathVariable Long id){
+		return memberService.listPending(authUser.id(), id);
 	}
 }
