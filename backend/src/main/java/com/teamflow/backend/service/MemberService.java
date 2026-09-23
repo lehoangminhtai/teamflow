@@ -21,11 +21,13 @@ import com.teamflow.backend.entity.ProjectMember;
 import com.teamflow.backend.entity.ProjectRole;
 import com.teamflow.backend.entity.User;
 import com.teamflow.backend.exception.ConflictException;
+import com.teamflow.backend.exception.ForbiddenException;
 import com.teamflow.backend.exception.NotFoundException;
 import com.teamflow.backend.mapper.ProjectMapper;
 import com.teamflow.backend.mapper.UserMapper;
 import com.teamflow.backend.repository.ProjectInvitationRepository;
 import com.teamflow.backend.repository.ProjectMemberRepository;
+import com.teamflow.backend.repository.TaskRepository;
 import com.teamflow.backend.repository.UserRepository;
 
 @Service
@@ -40,15 +42,18 @@ public class MemberService {
 	private final ProjectAccessService accessService;
 	private final UserMapper userMapper;
 	private final ProjectMapper projectMapper;
+	private final TaskRepository taskRepository;
+	
 	public MemberService(ProjectMemberRepository memberRepository, ProjectInvitationRepository invitationRepository,
 			UserRepository userRepository, ProjectAccessService accessService, UserMapper userMapper,
-			ProjectMapper projectMapper) {
+			ProjectMapper projectMapper, TaskRepository taskRepository) {
 		this.memberRepository = memberRepository;
 		this.invitationRepository = invitationRepository;
 		this.userRepository = userRepository;
 		this.accessService = accessService;
 		this.userMapper = userMapper;
 		this.projectMapper = projectMapper;
+		this.taskRepository = taskRepository;
 	}
 	
 	@Transactional(readOnly = true)
@@ -153,5 +158,53 @@ public class MemberService {
 		
 		invitation.revoke();
 		invitationRepository.save(invitation);
+	}
+	
+	@Transactional
+	public MemberResponse updateRole(
+			Long currentUserId, Long projectId, 
+			Long targetUserId, ProjectRole newRole
+			) {
+		accessService.requireRole(projectId, currentUserId, ProjectRole.OWNER);
+		
+		if (newRole == ProjectRole.OWNER) {
+			throw new ConflictException("Cannot update new role is OWNER. Please use the ownership transfer function.");
+		}
+		
+		ProjectMember target = memberRepository.findByProjectIdAndUserId(projectId, targetUserId)
+				.orElseThrow(() -> new NotFoundException("Not found membership"));
+		if (target.getRole() == ProjectRole.OWNER) {
+			throw new ConflictException("Cannot demote the project owner. Project must have owner");
+		}
+		
+		target.setRole(newRole);
+		memberRepository.save(target);
+		
+		log.info("Member role changed: projectId={} targetUserId={} newRole={}",
+				projectId, targetUserId, newRole);
+		
+		return new MemberResponse(userMapper.toSummary(target.getUser()),target.getRole(), target.getCreatedAt());
+	}
+	
+	@Transactional
+	public void remove(Long currentUserId, Long projectId, Long targetUserId) {
+		ProjectMember actor = accessService.requireRole(projectId, currentUserId, ProjectRole.OWNER, ProjectRole.MANAGER);
+		
+		ProjectMember target = memberRepository
+				.findByProjectIdAndUserId(projectId, targetUserId)
+				.orElseThrow(() -> new NotFoundException("Not found this member in project"));
+		if (target.getRole() == ProjectRole.OWNER) {
+			throw new ConflictException("Cannot remove owner");
+		}
+		
+		if (actor.getRole() == ProjectRole.MANAGER && target.getRole() == ProjectRole.MANAGER) {
+			throw new ForbiddenException("Only owner can remove other manage");
+		}
+		
+		int unassigned = taskRepository.unassignAllInProject(projectId, targetUserId);
+		
+		memberRepository.delete(target);
+		log.info("Member removed: projectId={} targetUserId={} unassignedTasks={} byUserId={}",
+				projectId, targetUserId, currentUserId, unassigned);
 	}
 }

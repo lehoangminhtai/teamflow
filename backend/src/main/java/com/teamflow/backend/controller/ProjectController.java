@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -19,6 +20,7 @@ import com.teamflow.backend.dto.common.PageResponse;
 import com.teamflow.backend.dto.member.InvitationResponse;
 import com.teamflow.backend.dto.member.InviteMemberRequest;
 import com.teamflow.backend.dto.member.MemberResponse;
+import com.teamflow.backend.dto.member.UpdateMemberRoleRequest;
 import com.teamflow.backend.dto.project.CreateProjectRequest;
 import com.teamflow.backend.dto.project.ProjectResponse;
 import com.teamflow.backend.dto.project.ProjectSummary;
@@ -125,5 +127,26 @@ public class ProjectController {
 	public List<InvitationResponse> listPending(@AuthenticationPrincipal AuthUser authUser,
 			@PathVariable Long id){
 		return memberService.listPending(authUser.id(), id);
+	}
+	
+	@PatchMapping("/{id}/members/{userId}")
+	@Operation(summary = "Update role member in project")
+	public MemberResponse updateRole(
+			@AuthenticationPrincipal AuthUser authUser,
+			@PathVariable Long id,
+			@PathVariable Long userId,
+			@Valid @RequestBody UpdateMemberRoleRequest request
+			) {
+		return memberService.updateRole(authUser.id(), id, userId, request.role());
+	}
+	
+	@DeleteMapping("/{id}/members/{userId}")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	public void removeMember(
+			@AuthenticationPrincipal AuthUser authUser,
+			@PathVariable Long id,
+			@PathVariable Long userId
+			) {
+		memberService.remove(authUser.id(), id, userId);
 	}
 }
